@@ -98,11 +98,10 @@ func saveconfigfile(configfilename string, data []byte) error {
 	}
 
 	file, err := os.Create(datafilepath)
-	defer file.Close()
-
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 
 	_, err = file.Write(data)
 	if err != nil {

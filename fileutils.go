@@ -81,7 +81,7 @@ func CopyFile(sourcepath string, destpath string, buffersize int64, overwrite bo
 
 // DownloadFile downloads a file from a url.
 func DownloadFile(url string, filepath string) error {
-	// Get the data
+	kuttilog.Printf(kuttilog.Debug, "Connecting to %s...", url)
 	resp, err := http.Get(url)
 	if err != nil {
 		return err
@@ -108,6 +108,8 @@ func DownloadFile(url string, filepath string) error {
 		return err
 	}
 
+	kuttilog.Printf(kuttilog.Debug, "Saved to temporary file %v.", tmpfilepath)
+
 	// Check and remove destination path if it exists
 	// Windows may cause a problem otherwise
 	_, err = os.Stat(filepath)
@@ -118,6 +120,9 @@ func DownloadFile(url string, filepath string) error {
 	if err = os.Rename(tmpfilepath, filepath); err != nil {
 		return err
 	}
+
+	kuttilog.Printf(kuttilog.Debug, "Downloaded to file %v.", filepath)
+
 	return nil
 }
 
