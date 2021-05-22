@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
-	"github.com/kuttiproject/kuttilog"
 	"github.com/kuttiproject/workspace"
 )
 
@@ -18,11 +17,10 @@ func TestSet(t *testing.T) {
 
 	// Set workspace, check kutti-config and kutti-reset subdirectories
 	tdir := t.TempDir()
-	wdir := path.Join(tdir, "wksp1")
-	confdir := path.Join(wdir, "kutti-config")
-	cachedir := path.Join(wdir, "kutti-cache")
-	confsubdir := path.Join(confdir, tsubdirname)
-	cachesubdir := path.Join(cachedir, tsubdirname)
+	wdir := filepath.Join(tdir, "wksp1")
+	confdir := filepath.Join(wdir, "kutti-config")
+	cachedir := filepath.Join(wdir, "kutti-cache")
+	cachesubdir := filepath.Join(cachedir, tsubdirname)
 
 	t.Logf("Setting workspace to %v", wdir)
 	workspace.Set(wdir)
@@ -40,10 +38,6 @@ func TestSet(t *testing.T) {
 
 	checkdirfunc(t, cachedir, "Cachedir", workspace.Cachedir)
 
-	checkdirfunc(t, confsubdir, "Configsubdir", func() (string, error) {
-		return workspace.Configsubdir(tsubdirname)
-	})
-
 	checkdirfunc(t, cachesubdir, "Cachesubdir", func() (string, error) {
 		return workspace.Cachesubdir(tsubdirname)
 	})
@@ -55,36 +49,30 @@ func TestReset(t *testing.T) {
 	workspace.Reset()
 
 	confdir, _ := os.UserConfigDir()
-	confdir = path.Join(confdir, "kutti")
+	confdir = filepath.Join(confdir, "kutti")
 	cachedir, _ := os.UserCacheDir()
-	cachedir = path.Join(cachedir, "kutti")
-	confsubdir := path.Join(confdir, tsubdirname)
-	cachesubdir := path.Join(cachedir, tsubdirname)
+	cachedir = filepath.Join(cachedir, "kutti")
+	cachesubdir := filepath.Join(cachedir, tsubdirname)
 
 	checkdirfunc(t, confdir, "Post-reset Configdir", workspace.Configdir)
 
 	checkdirfunc(t, cachedir, "Post-reset Cachedir", workspace.Cachedir)
 
-	checkdirfunc(t, confsubdir, "Post-reset Configsubdir", func() (string, error) {
-		return workspace.Configsubdir(tsubdirname)
-	})
-
 	checkdirfunc(t, cachesubdir, "Post-reset Cachesubdir", func() (string, error) {
 		return workspace.Cachesubdir(tsubdirname)
 	})
 
-	os.RemoveAll(confsubdir)
 	os.RemoveAll(cachesubdir)
 }
 
 func TestSetWithPopulatedDirectory(t *testing.T) {
 	defer workspace.Reset()
 
-	// Set workspace to prepoulated directory, and check failure
+	// Set workspace to prepopulated directory, and check failure
 	tdir := t.TempDir()
-	wdir := path.Join(tdir, "wksp1")
-	confdir := path.Join(wdir, "kutti-config")
-	cachedir := path.Join(wdir, "kutti-cache")
+	wdir := filepath.Join(tdir, "wksp1")
+	confdir := filepath.Join(wdir, "kutti-config")
+	cachedir := filepath.Join(wdir, "kutti-cache")
 
 	// Set workspace to populated directory
 	t.Logf("Setting workspace to %v", wdir)
@@ -104,12 +92,7 @@ func TestSetWithPopulatedDirectory(t *testing.T) {
 		t.Errorf("Post-cleanup Cachedir failed with: %v", err)
 	}
 
-	confsubdir := path.Join(confdir, tsubdirname)
-	cachesubdir := path.Join(cachedir, tsubdirname)
-
-	checkpopulateddirfunc(t, confsubdir, "Configsubdir", func() (string, error) {
-		return workspace.Configsubdir(tsubdirname)
-	})
+	cachesubdir := filepath.Join(cachedir, tsubdirname)
 
 	checkpopulateddirfunc(t, cachesubdir, "Cachesubdir", func() (string, error) {
 		return workspace.Cachesubdir(tsubdirname)
@@ -120,7 +103,7 @@ func TestWithNoPermissions(t *testing.T) {
 	defer workspace.Reset()
 
 	tdir := t.TempDir()
-	wpath := path.Join(tdir, "wksp1")
+	wpath := filepath.Join(tdir, "wksp1")
 	err := os.Mkdir(wpath, 0)
 	if err != nil {
 		t.Logf(
@@ -148,19 +131,13 @@ func TestWithNoPermissions(t *testing.T) {
 		t.Fail()
 	}
 
-	_, err = workspace.Configsubdir(tsubdirname)
-	if err == nil {
-		t.Logf("There should have been an error getting config subdirectory.")
-		t.Fail()
-	}
-
 	_, err = workspace.Cachesubdir(tsubdirname)
 	if err == nil {
 		t.Logf("There should have been an error getting cache subdirectory.")
 		t.Fail()
 	}
 
-	wpath = path.Join(wpath, "subwksp")
+	wpath = filepath.Join(wpath, "subwksp")
 	err = workspace.Set(wpath)
 	if err == nil {
 		t.Logf("There should have been an error setting workspace directory.")
@@ -236,7 +213,8 @@ func (sd *sampledata) Setdefaults() {
 }
 
 func TestFileConfigManager(t *testing.T) {
-	kuttilog.Setloglevel(kuttilog.Debug)
+	// Uncomment to see detailed logs
+	// kuttilog.Setloglevel(kuttilog.Debug)
 
 	tdir := t.TempDir()
 	workspace.Set(tdir)
@@ -245,7 +223,23 @@ func TestFileConfigManager(t *testing.T) {
 	config := &sampledata{}
 
 	// Test NewFileConfigManager
-	fcm, err := workspace.NewFileConfigmanager("testfile.json", config)
+	// Should not accept empty filename
+	_, err := workspace.NewFileConfigmanager("", config)
+	if err == nil {
+		t.Logf("NewFileConfigmanager should not have accepted an empty filename")
+		t.FailNow()
+	}
+
+	// Should not accept a filename with path
+	fpath := filepath.Join(os.TempDir(), "testfile.json")
+	_, err = workspace.NewFileConfigmanager(fpath, config)
+	if err == nil {
+		t.Logf("NewFileConfigmanager should not have accepted a filename with a path")
+		t.FailNow()
+	}
+
+	fpath = "testfile.json"
+	fcm, err := workspace.NewFileConfigmanager(fpath, config)
 	if err != nil {
 		t.Logf("Error while getting new ConfigManager: %v", err)
 		t.FailNow()
@@ -297,7 +291,7 @@ func TestFileConfigManager(t *testing.T) {
 
 	err = fcm.Load()
 	if err == nil {
-		t.Log("Load should have errored out here.")
+		t.Log("Load should have caused an error.")
 		t.Fail()
 	}
 
@@ -400,7 +394,7 @@ func TestDownloadFile(t *testing.T) {
 
 func TestRunWithResults(t *testing.T) {
 	// Uncomment to see detailed logs
-	//kuttilog.Setloglevel(4)
+	// kuttilog.Setloglevel(kuttilog.Debug)
 
 	t.Log("Testing runwithresults with 'hostname'...")
 	output, err := workspace.Runwithresults("hostname")

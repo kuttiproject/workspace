@@ -4,7 +4,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 
 	"github.com/kuttiproject/kuttilog"
 )
@@ -86,7 +86,7 @@ func getconfigfilepath(configFileName string) (string, error) {
 		return "", err
 	}
 
-	datafilepath := path.Join(configPath, configFileName)
+	datafilepath := filepath.Join(configPath, configFileName)
 	return datafilepath, nil
 }
 
@@ -138,11 +138,19 @@ func loadconfigfile(configfilename string) ([]byte, bool, error) {
 
 // NewFileConfigmanager returns a Configmanager that manages data in a file saved
 // under the current workspace's configuration directory.
+// The filename parameter needs a filename without a path.
 func NewFileConfigmanager(filename string, s Configdata) (Configmanager, error) {
 	if filename == "" || s == nil {
 		return nil,
 			errors.New("must provide configuration file name and serializer")
 	}
+
+	dirname, filename := filepath.Split(filename)
+	if dirname != "" {
+		return nil,
+			errors.New("configuration file name must not have a path")
+	}
+
 	result := &fileConfigManager{
 		configfilename: filename,
 		configdata:     s,

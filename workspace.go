@@ -3,7 +3,7 @@ package workspace
 import (
 	"errors"
 	"os"
-	"path"
+	"path/filepath"
 )
 
 var (
@@ -39,17 +39,6 @@ func Configdir() (string, error) {
 	}
 
 	return ensuresubdirectory(workspace, "kutti-config")
-}
-
-// Configsubdir returns the full path to a subdirectory under the Configdir.
-// If the directory does not exist, it is created.
-func Configsubdir(subpath string) (string, error) {
-	configdir, err := Configdir()
-	if err != nil {
-		return "", err
-	}
-
-	return ensuresubdirectory(configdir, subpath)
 }
 
 // Cachedir returns the location where cached files should reside.
@@ -92,7 +81,7 @@ func defaultcachedir() (string, error) {
 }
 
 func ensuresubdirectory(directorypath string, subpath string) (string, error) {
-	result := path.Join(directorypath, subpath)
+	result := filepath.Join(directorypath, subpath)
 
 	err := ensuredirectory(result)
 	if err != nil {
