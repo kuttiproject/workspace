@@ -7,7 +7,7 @@ import (
 	"github.com/kuttiproject/kuttilog"
 )
 
-// Runwithresults runs an OS process, and returns the combined stdout and stderr ouput.
+// Runwithresults runs an OS process, and returns the combined stdout and stderr output.
 func Runwithresults(execpath string, paramarray ...string) (result string, err error) {
 	if kuttilog.V(kuttilog.Debug) {
 		kuttilog.Println(kuttilog.Debug, "------------------")
