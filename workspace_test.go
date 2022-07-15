@@ -344,6 +344,127 @@ func TestCopyFile(t *testing.T) {
 
 }
 
+func TestCopyFileWithProgress(t *testing.T) {
+	sourceresult, err := workspace.ChecksumFile("workspace_test.go")
+	if err != nil {
+		t.Logf("Checksum source failed with error:%v", err)
+		t.FailNow()
+	}
+	t.Logf("Source Checksum is '%v'", sourceresult)
+
+	pfuncCalled := false
+	pfuncCallCount := 0
+	pfunc := func(current int64, total int64) {
+		pfuncCalled = true
+		pfuncCallCount += 1
+		t.Logf("   copied %v bytes/%v bytes.", current, total)
+	}
+
+	err = workspace.CopyFileWithProgress("workspace_test.go", "deletethis_test.xxx", 1000, true, pfunc)
+	if err != nil {
+		t.Logf("CopyfileWithProgress failed with error:%v", err)
+		t.FailNow()
+	}
+
+	defer os.Remove("deletethis_test.xxx")
+
+	destresult, err := workspace.ChecksumFile("deletethis_test.xxx")
+	if err != nil {
+		t.Logf("Checksum of destination failed with error:%v", err)
+		t.FailNow()
+	}
+	t.Logf("Destination Checksum is '%v'", destresult)
+
+	if destresult != sourceresult {
+		t.Log("Source and destination checksums don't match. Copy was faulty.")
+		t.FailNow()
+	}
+
+	if !pfuncCalled {
+		t.Log("Progress function was not called.")
+		t.FailNow()
+	}
+
+	t.Logf("Progress func called %v times", pfuncCallCount)
+
+	// Try failing the copy due to destination being present
+	err = workspace.CopyFileWithProgress("workspace_test.go", "deletethis_test.xxx", 1000, false, pfunc)
+	if err == nil {
+		t.Log("Copying without overwrite should have caused an error.")
+		t.Fail()
+	}
+}
+
+func TestDownloadFileWithProgress(t *testing.T) {
+	const dfilename = "soedit-1.0.tar.gz"
+
+	pfuncCalled := false
+	pfuncCallCount := 0
+	pfunc := func(current int64, total int64) {
+		pfuncCalled = true
+		pfuncCallCount += 1
+		t.Logf("   copied %v bytes/%v bytes.", current, total)
+	}
+
+	err := workspace.DownloadFileWithProgress(
+		"https://github.com/rajch/soedit/releases/download/v1.0/soedit-1.0.tar.gz",
+		dfilename,
+		pfunc,
+	)
+
+	if err != nil {
+		t.Logf("Downloadfile failed with error:%v\n", err)
+		t.FailNow()
+	}
+
+	defer workspace.RemoveFile(dfilename)
+
+	if !pfuncCalled {
+		t.Log("Progress callback not invoked.")
+		t.FailNow()
+	}
+
+	destresult, err := workspace.ChecksumFile(dfilename)
+	if err != nil {
+		t.Logf("Checksum of destination failed with error:%v", err)
+		t.FailNow()
+	}
+	t.Logf("Destination Checksum is '%v'", destresult)
+
+	if destresult != "1f7960f2a6629b7af53c2cd1e1a505691573f2ba52641f23ca8cbf4814aa3526" {
+		t.Log("Checksum doesn't match. Download was faulty.")
+		t.FailNow()
+	}
+
+	// Try downloading a non-existent file
+	pfuncCalled = false
+	pfuncCallCount = 0
+	err = workspace.DownloadFileWithProgress(
+		"https://github.com/rajch/soedit/releases/download/v1.0/soedit-1.0.tar.gz-notthere",
+		dfilename,
+		pfunc,
+	)
+	if err == nil {
+		t.Log("Trying to download a non-existent file should have returned an error.")
+		t.FailNow()
+	}
+
+	t.Logf("Download attempt returned error: %v", err)
+
+	// Download file again to check overwriting
+	pfuncCalled = false
+	pfuncCallCount = 0
+	err = workspace.DownloadFileWithProgress(
+		"https://github.com/rajch/soedit/releases/download/v1.0/soedit-1.0.tar.gz",
+		dfilename,
+		pfunc,
+	)
+	if err != nil {
+		t.Logf("Second download failed with error: %v", err)
+		t.FailNow()
+	}
+}
+
 func TestDownloadFile(t *testing.T) {
 	const dfilename = "soedit-1.0.tar.gz"
 	err := workspace.DownloadFile(

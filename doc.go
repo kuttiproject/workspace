@@ -19,7 +19,7 @@
 //
 // A workspace has a cache directory, where any data files can be stored. By default,
 // this is a subdirectory called "kutti" under the OS-specific user cache directory,
-// as returned by os.UserConfigDir().
+// as returned by os.UserCacheDir().
 //
 // Data files can be stored directly in a workspace's cache directory, or preferably
 // in subdirectories under the cache directory.
