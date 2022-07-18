@@ -8,11 +8,11 @@
 // This directory is meant to be flat, that is, all configuration files in the
 // workspace are to be stored in this directory, and not any subdirectory.
 //
-// Two interfaces, called Configdata and Configmanager, are provided for managing
-// configuration files. Configdata should be implemented for storing and retrieving
-// any kind of configuration information. Configmanager manages loading and saving
+// Two interfaces, called ConfigData and ConfigManager, are provided for managing
+// configuration files. ConfigData should be implemented for storing and retrieving
+// any kind of configuration information. ConfigManager manages loading and saving
 // this data to some kind of persistent storage. A default implementation of
-// ConfigManager is provided by the NewFileConfigmanager() method, which uses
+// ConfigManager is provided by the NewFileConfigManager() method, which uses
 // files in the config directory as persistent storage.
 //
 // Cache

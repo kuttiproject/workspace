@@ -34,12 +34,12 @@ func TestSet(t *testing.T) {
 		)
 	}
 
-	checkdirfunc(t, confdir, "Configdir", workspace.Configdir)
+	checkdirfunc(t, confdir, "Configdir", workspace.ConfigDir)
 
-	checkdirfunc(t, cachedir, "Cachedir", workspace.Cachedir)
+	checkdirfunc(t, cachedir, "Cachedir", workspace.CacheDir)
 
 	checkdirfunc(t, cachesubdir, "Cachesubdir", func() (string, error) {
-		return workspace.Cachesubdir(tsubdirname)
+		return workspace.CacheSubDir(tsubdirname)
 	})
 }
 
@@ -54,12 +54,12 @@ func TestReset(t *testing.T) {
 	cachedir = filepath.Join(cachedir, "kutti")
 	cachesubdir := filepath.Join(cachedir, tsubdirname)
 
-	checkdirfunc(t, confdir, "Post-reset Configdir", workspace.Configdir)
+	checkdirfunc(t, confdir, "Post-reset Configdir", workspace.ConfigDir)
 
-	checkdirfunc(t, cachedir, "Post-reset Cachedir", workspace.Cachedir)
+	checkdirfunc(t, cachedir, "Post-reset Cachedir", workspace.CacheDir)
 
 	checkdirfunc(t, cachesubdir, "Post-reset Cachesubdir", func() (string, error) {
-		return workspace.Cachesubdir(tsubdirname)
+		return workspace.CacheSubDir(tsubdirname)
 	})
 
 	os.RemoveAll(cachesubdir)
@@ -78,16 +78,16 @@ func TestSetWithPopulatedDirectory(t *testing.T) {
 	t.Logf("Setting workspace to %v", wdir)
 	workspace.Set(wdir)
 
-	checkpopulateddirfunc(t, confdir, "Configdir", workspace.Configdir)
+	checkpopulateddirfunc(t, confdir, "Configdir", workspace.ConfigDir)
 
-	checkpopulateddirfunc(t, cachedir, "Cachedir", workspace.Cachedir)
+	checkpopulateddirfunc(t, cachedir, "Cachedir", workspace.CacheDir)
 
-	_, err := workspace.Configdir()
+	_, err := workspace.ConfigDir()
 	if err != nil {
 		t.Errorf("Post-cleanup Configdir failed with: %v", err)
 	}
 
-	_, err = workspace.Cachedir()
+	_, err = workspace.CacheDir()
 	if err != nil {
 		t.Errorf("Post-cleanup Cachedir failed with: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestSetWithPopulatedDirectory(t *testing.T) {
 	cachesubdir := filepath.Join(cachedir, tsubdirname)
 
 	checkpopulateddirfunc(t, cachesubdir, "Cachesubdir", func() (string, error) {
-		return workspace.Cachesubdir(tsubdirname)
+		return workspace.CacheSubDir(tsubdirname)
 	})
 }
 
@@ -119,19 +119,19 @@ func TestWithNoPermissions(t *testing.T) {
 		t.Fail()
 	}
 
-	_, err = workspace.Configdir()
+	_, err = workspace.ConfigDir()
 	if err == nil {
 		t.Logf("There should have been an error getting config directory.")
 		t.Fail()
 	}
 
-	_, err = workspace.Cachedir()
+	_, err = workspace.CacheDir()
 	if err == nil {
 		t.Logf("There should have been an error getting cache directory.")
 		t.Fail()
 	}
 
-	_, err = workspace.Cachesubdir(tsubdirname)
+	_, err = workspace.CacheSubDir(tsubdirname)
 	if err == nil {
 		t.Logf("There should have been an error getting cache subdirectory.")
 		t.Fail()
@@ -205,7 +205,7 @@ func (sd *sampledata) Deserialize(data []byte) error {
 	return err
 }
 
-func (sd *sampledata) Setdefaults() {
+func (sd *sampledata) SetDefaults() {
 	*sd = sampledata{
 		Name: "Test",
 		Age:  42,
@@ -224,7 +224,7 @@ func TestFileConfigManager(t *testing.T) {
 
 	// Test NewFileConfigManager
 	// Should not accept empty filename
-	_, err := workspace.NewFileConfigmanager("", config)
+	_, err := workspace.NewFileConfigManager("", config)
 	if err == nil {
 		t.Logf("NewFileConfigmanager should not have accepted an empty filename")
 		t.FailNow()
@@ -232,14 +232,14 @@ func TestFileConfigManager(t *testing.T) {
 
 	// Should not accept a filename with path
 	fpath := filepath.Join(os.TempDir(), "testfile.json")
-	_, err = workspace.NewFileConfigmanager(fpath, config)
+	_, err = workspace.NewFileConfigManager(fpath, config)
 	if err == nil {
 		t.Logf("NewFileConfigmanager should not have accepted a filename with a path")
 		t.FailNow()
 	}
 
 	fpath = "testfile.json"
-	fcm, err := workspace.NewFileConfigmanager(fpath, config)
+	fcm, err := workspace.NewFileConfigManager(fpath, config)
 	if err != nil {
 		t.Logf("Error while getting new ConfigManager: %v", err)
 		t.FailNow()
@@ -518,7 +518,7 @@ func TestRunWithResults(t *testing.T) {
 	// kuttilog.Setloglevel(kuttilog.Debug)
 
 	t.Log("Testing runwithresults with 'hostname'...")
-	output, err := workspace.Runwithresults("hostname")
+	output, err := workspace.RunWithResults("hostname")
 	if err != nil {
 		t.Logf("Exec failed with error:%v\n", err)
 		t.Fail()
@@ -526,7 +526,7 @@ func TestRunWithResults(t *testing.T) {
 	t.Logf("Output was: \n'%v'\n", output)
 
 	t.Log("Testing runwithresults with 'hostname -i'...")
-	output, err = workspace.Runwithresults("hostname", "-i")
+	output, err = workspace.RunWithResults("hostname", "-i")
 	if err != nil {
 		t.Logf("Exec failed with error:%v\n", err)
 		t.Fail()

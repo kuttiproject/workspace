@@ -11,7 +11,7 @@ import (
 
 type fileConfigManager struct {
 	configfilename string
-	configdata     Configdata
+	configdata     ConfigData
 }
 
 // Load loads a saved config, or initializes default values
@@ -23,7 +23,7 @@ func (cm *fileConfigManager) Load() error {
 			"Config file '%s' does not exist. Loading defaults.",
 			cm.configfilename,
 		)
-		cm.configdata.Setdefaults()
+		cm.configdata.SetDefaults()
 		return cm.Save()
 	}
 
@@ -39,7 +39,7 @@ func (cm *fileConfigManager) Load() error {
 			cm.configfilename,
 			err,
 		)
-		cm.configdata.Setdefaults()
+		cm.configdata.SetDefaults()
 		cm.Save()
 		return err
 	}
@@ -77,11 +77,11 @@ func (cm *fileConfigManager) Save() error {
 
 // Reset resets a config to default values
 func (cm *fileConfigManager) Reset() {
-	cm.configdata.Setdefaults()
+	cm.configdata.SetDefaults()
 }
 
 func getconfigfilepath(configFileName string) (string, error) {
-	configPath, err := Configdir()
+	configPath, err := ConfigDir()
 	if err != nil {
 		return "", err
 	}
@@ -136,10 +136,10 @@ func loadconfigfile(configfilename string) ([]byte, bool, error) {
 	return data, false, nil
 }
 
-// NewFileConfigmanager returns a Configmanager that manages data in a file saved
+// NewFileConfigManager returns a ConfigManager that manages data in a file saved
 // under the current workspace's configuration directory.
 // The filename parameter needs a filename without a path.
-func NewFileConfigmanager(filename string, s Configdata) (Configmanager, error) {
+func NewFileConfigManager(filename string, s ConfigData) (ConfigManager, error) {
 	if filename == "" || s == nil {
 		return nil,
 			errors.New("must provide configuration file name and serializer")

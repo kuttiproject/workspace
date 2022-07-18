@@ -31,9 +31,9 @@ func Reset() {
 	workspace = ""
 }
 
-// Configdir returns the full path where config files reside.
+// ConfigDir returns the full path where config files reside.
 // If the directory does not exist, it is created.
-func Configdir() (string, error) {
+func ConfigDir() (string, error) {
 	if workspace == "" {
 		return defaultconfigdir()
 	}
@@ -41,9 +41,9 @@ func Configdir() (string, error) {
 	return ensuresubdirectory(workspace, "kutti-config")
 }
 
-// Cachedir returns the location where cached files should reside.
+// CacheDir returns the location where cached files should reside.
 // If the directory does not exist, it is created.
-func Cachedir() (string, error) {
+func CacheDir() (string, error) {
 	if workspace == "" {
 		return defaultcachedir()
 	}
@@ -51,10 +51,10 @@ func Cachedir() (string, error) {
 	return ensuresubdirectory(workspace, "kutti-cache")
 }
 
-// Cachesubdir returns the full path to a subdirectory under the Cachedir.
+// CacheSubDir returns the full path to a subdirectory under the CacheDir.
 // If the directory does not exist, it is created.
-func Cachesubdir(subpath string) (string, error) {
-	cachedir, err := Cachedir()
+func CacheSubDir(subpath string) (string, error) {
+	cachedir, err := CacheDir()
 	if err != nil {
 		return "", err
 	}
