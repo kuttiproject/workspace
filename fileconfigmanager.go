@@ -2,7 +2,6 @@ package workspace
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -127,7 +126,7 @@ func loadconfigfile(configfilename string) ([]byte, bool, error) {
 		return nil, false, err
 	}
 
-	data, err := ioutil.ReadFile(datafilepath)
+	data, err := os.ReadFile(datafilepath)
 
 	if err != nil {
 		return nil, false, err
