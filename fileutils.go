@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-
-	"github.com/kuttiproject/kuttilog"
 )
 
 // ChecksumFile calculates an SHA256 checksum of a file.
@@ -50,67 +48,6 @@ func (pr *progressreader) Read(dst []byte) (int, error) {
 	}
 
 	return n, err
-}
-
-func copyfile(sourcepath string, destpath string, buffersize int64, overwrite bool, progress ProgressFunc) error {
-	sourceFileStat, err := os.Stat(sourcepath)
-	if err != nil {
-		return err
-	}
-
-	if !sourceFileStat.Mode().IsRegular() {
-		return fmt.Errorf("%s is not a regular file", sourcepath)
-	}
-
-	if !overwrite {
-		_, err = os.Stat(destpath)
-		if err == nil {
-			return fmt.Errorf("destination path %s already exists", destpath)
-		}
-	}
-
-	source, err := os.Open(sourcepath)
-	if err != nil {
-		return err
-	}
-	defer source.Close()
-
-	destination, err := os.Create(destpath)
-	if err != nil {
-		return err
-	}
-	defer destination.Close()
-
-	var sourcereader io.Reader
-	if progress != nil {
-		sourcereader = &progressreader{
-			source,
-			0,
-			sourceFileStat.Size(),
-			progress,
-		}
-	} else {
-		sourcereader = source
-	}
-
-	kuttilog.Printf(kuttilog.Debug, "Copying %s to %s:\n", sourcepath, destpath)
-
-	buf := make([]byte, buffersize)
-	for {
-		n, err := sourcereader.Read(buf)
-		if err != nil && err != io.EOF {
-			return err
-		}
-		if n == 0 && err == io.EOF {
-			break
-		}
-
-		if _, err := destination.Write(buf[:n]); err != nil {
-			return err
-		}
-	}
-
-	return err
 }
 
 // CopyFile copies a file in chunks of the specified size.
