@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 
 	"github.com/kuttiproject/kuttilog"
@@ -112,64 +111,6 @@ func copyfile(sourcepath string, destpath string, buffersize int64, overwrite bo
 	}
 
 	return err
-}
-
-func downloadfile(url string, filepath string, progress ProgressFunc) error {
-	kuttilog.Printf(kuttilog.Debug, "Connecting to %s...", url)
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("HTTP client returned the status: %v:%v", resp.StatusCode, resp.Status)
-	}
-
-	tmpfilepath := filepath + ".download"
-	out, err := os.Create(tmpfilepath)
-	if err != nil {
-		return err
-	}
-
-	var respreader io.Reader
-	if progress != nil {
-		respreader = &progressreader{
-			resp.Body,
-			0,
-			resp.ContentLength,
-			progress,
-		}
-	} else {
-		respreader = resp.Body
-	}
-
-	if _, err = io.Copy(out, respreader); err != nil {
-		out.Close()
-		return err
-	}
-
-	err = out.Close()
-	if err != nil {
-		return err
-	}
-
-	kuttilog.Printf(kuttilog.Debug, "Saved to temporary file %v.", tmpfilepath)
-
-	// Check and remove destination path if it exists
-	// Windows may cause a problem otherwise
-	_, err = os.Stat(filepath)
-	if err == nil {
-		os.RemoveAll(filepath)
-	}
-
-	if err = os.Rename(tmpfilepath, filepath); err != nil {
-		return err
-	}
-
-	kuttilog.Printf(kuttilog.Debug, "Downloaded to file %v.", filepath)
-
-	return nil
 }
 
 // CopyFile copies a file in chunks of the specified size.
