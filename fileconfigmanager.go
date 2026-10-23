@@ -2,8 +2,10 @@ package workspace
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/kuttiproject/kuttilog"
 )
@@ -32,15 +34,7 @@ func (cm *fileConfigManager) Load() error {
 
 	err = cm.configdata.Deserialize(data)
 	if err != nil {
-		kuttilog.Printf(
-			kuttilog.Verbose,
-			"Error reading config file '%s':%v. Loading defaults.",
-			cm.configfilename,
-			err,
-		)
-		cm.configdata.SetDefaults()
-		cm.Save()
-		return err
+		return cm.recoverfromcorruptfile(err)
 	}
 
 	kuttilog.Printf(
@@ -51,6 +45,36 @@ func (cm *fileConfigManager) Load() error {
 	)
 
 	return nil
+}
+
+// recoverfromcorruptfile is called when a config file exists, but cannot
+// be deserialized. It sets the file aside, so that nothing is lost, loads
+// default values, and saves them. A config file is not changed in any
+// way until it has been set aside.
+//
+// If it succeeds, Load succeeds: the manager is in a usable state, with
+// default values.
+func (cm *fileConfigManager) recoverfromcorruptfile(parseerr error) error {
+	backuppath, err := setasideconfigfile(cm.configfilename)
+	if err != nil {
+		return fmt.Errorf(
+			"config file '%s' could not be read (%v), and could not be set aside: %w",
+			cm.configfilename,
+			parseerr,
+			err,
+		)
+	}
+
+	kuttilog.Printf(
+		kuttilog.Quiet,
+		"Config file '%s' could not be read: %v. It has been moved to '%s', and default values are in use.",
+		cm.configfilename,
+		parseerr,
+		backuppath,
+	)
+
+	cm.configdata.SetDefaults()
+	return cm.Save()
 }
 
 // Save saves a config
@@ -89,25 +113,15 @@ func getconfigfilepath(configFileName string) (string, error) {
 	return datafilepath, nil
 }
 
-// saveconfigfile saves the specified data into the named file in the kutti config directory.
+// saveconfigfile saves the specified data into the named file in the kutti
+// config directory. The file is replaced atomically.
 func saveconfigfile(configfilename string, data []byte) error {
 	datafilepath, err := getconfigfilepath(configfilename)
 	if err != nil {
 		return err
 	}
 
-	file, err := os.Create(datafilepath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = file.Write(data)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return atomicwritefile(datafilepath, data)
 }
 
 // loadconfigfile loads data from the named file in the kutti config directory.
@@ -117,8 +131,9 @@ func loadconfigfile(configfilename string) ([]byte, bool, error) {
 	if err != nil {
 		return nil, false, err
 	}
-	_, err = os.Stat(datafilepath)
-	if os.IsNotExist(err) {
+
+	data, err := os.ReadFile(datafilepath)
+	if errors.Is(err, os.ErrNotExist) {
 		return nil, true, err
 	}
 
@@ -126,13 +141,33 @@ func loadconfigfile(configfilename string) ([]byte, bool, error) {
 		return nil, false, err
 	}
 
-	data, err := os.ReadFile(datafilepath)
+	return data, false, nil
+}
 
+// setasideconfigfile renames the named file in the kutti config directory
+// to <name>.<timestamp>.corrupt, in the same directory, and returns the
+// new path. The timestamp is in UTC, like 20060102T150405.000Z.
+//
+// If the file does not exist any more, for example because another process
+// set it aside first, that is not an error.
+func setasideconfigfile(configfilename string) (string, error) {
+	datafilepath, err := getconfigfilepath(configfilename)
 	if err != nil {
-		return nil, false, err
+		return "", err
 	}
 
-	return data, false, nil
+	backuppath := fmt.Sprintf(
+		"%s.%s.corrupt",
+		datafilepath,
+		time.Now().UTC().Format("20060102T150405.000Z"),
+	)
+
+	err = os.Rename(datafilepath, backuppath)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return "", err
+	}
+
+	return backuppath, nil
 }
 
 // NewFileConfigManager returns a ConfigManager that manages data in a file saved
