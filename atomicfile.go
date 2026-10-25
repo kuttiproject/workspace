@@ -8,6 +8,20 @@ import (
 	"time"
 )
 
+// AtomicWriteFile writes data to a file so that readers see either the
+// old content or the new content, never a partial file. It writes a
+// temporary file in the same directory, syncs it, and renames it over the
+// destination. If anything fails, the destination is unchanged and the
+// temporary file is removed. The file gets the permissions that os.Create
+// would give it.
+//
+// Use ReadFileRetrying to read such a file where other processes may be
+// replacing it, because on Windows a read can fail briefly during the
+// replacement.
+func AtomicWriteFile(path string, data []byte) error {
+	return atomicwritefile(path, data)
+}
+
 // atomicwritefile writes data to a file so that readers see either the
 // old content or the new content, never a partial file. It writes a
 // temporary file in the same directory, syncs it, and renames it over the

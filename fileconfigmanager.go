@@ -132,7 +132,7 @@ func loadconfigfile(configfilename string) ([]byte, bool, error) {
 		return nil, false, err
 	}
 
-	data, err := os.ReadFile(datafilepath)
+	data, err := ReadFileRetrying(datafilepath)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, true, err
 	}
