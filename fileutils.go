@@ -39,12 +39,19 @@ type progressreader struct {
 	callback ProgressFunc
 }
 
+// Read reads from the underlying reader and reports progress. A Read
+// may return data together with an error, io.EOF in particular, and
+// the io.Reader contract says that such data must be processed. So
+// the bytes are counted and reported whenever there are any, whatever
+// the error. Otherwise the last callback could fall short of the total.
 func (pr *progressreader) Read(dst []byte) (int, error) {
 	n, err := pr.Reader.Read(dst)
 
-	if err == nil && pr.callback != nil {
+	if n > 0 {
 		pr.current += int64(n)
-		pr.callback(pr.current, pr.total)
+		if pr.callback != nil {
+			pr.callback(pr.current, pr.total)
+		}
 	}
 
 	return n, err

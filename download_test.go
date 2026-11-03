@@ -101,9 +101,13 @@ func TestDownloadReportsProgress(t *testing.T) {
 	server := contentserver(t, payload(200000, 2))
 
 	var calls int
-	var lasttotal int64
+	var last, lasttotal int64
 	err := downloadfile(server.URL, filepath.Join(dir, "p.bin"), func(current, total int64) {
 		calls++
+		if current < last {
+			t.Errorf("progress went from %d to %d", last, current)
+		}
+		last = current
 		lasttotal = total
 	})
 	if err != nil {
@@ -111,6 +115,9 @@ func TestDownloadReportsProgress(t *testing.T) {
 	}
 	if calls == 0 || lasttotal != 200000 {
 		t.Errorf("progress called %d times, last total %d", calls, lasttotal)
+	}
+	if last != 200000 {
+		t.Errorf("last progress was %d, expected 200000", last)
 	}
 }
 
