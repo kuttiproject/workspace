@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/kuttiproject/workspace"
@@ -100,6 +101,14 @@ func TestSetWithPopulatedDirectory(t *testing.T) {
 }
 
 func TestWithNoPermissions(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("directory permissions are not enforced on Windows")
+	}
+
+	if os.Geteuid() == 0 {
+		t.Skip("root is not stopped by directory permissions")
+	}
+
 	defer workspace.Reset()
 
 	tdir := t.TempDir()
@@ -525,8 +534,8 @@ func TestRunWithResults(t *testing.T) {
 	}
 	t.Logf("Output was: \n'%v'\n", output)
 
-	t.Log("Testing runwithresults with 'hostname -i'...")
-	output, err = workspace.RunWithResults("hostname", "-i")
+	t.Log("Testing runwithresults with 'go version'...")
+	output, err = workspace.RunWithResults("go", "version")
 	if err != nil {
 		t.Logf("Exec failed with error:%v\n", err)
 		t.Fail()
